@@ -1,149 +1,103 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useMemo, useRef, useState, useEffect } from "react";
+
+import { centerOffset, clampOffset, coverSize } from "./geometry.mjs";
+
+const KEY_STEP = 20;
+
+const KEY_DELTAS = new Map([
+  ["ArrowUp", { x: 0, y: -KEY_STEP }],
+  ["ArrowDown", { x: 0, y: KEY_STEP }],
+  ["ArrowLeft", { x: -KEY_STEP, y: 0 }],
+  ["ArrowRight", { x: KEY_STEP, y: 0 }]
+]);
 
 const ImageCropView = ({
   src,
   alt = "Croppable image",
   containerWidth = 800,
   containerHeight = 400,
-  isEditing,
-  zoom = 1,
+  isEditing = false,
+  zoom = 1
 }) => {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
-  const imageRef = useRef(null);
+  const [natural, setNatural] = useState(null);
+  // null until the viewer pans, so the image starts centred at any size or zoom.
+  const [offset, setOffset] = useState(null);
+  const [grab, setGrab] = useState(null);
   const containerRef = useRef(null);
 
   useEffect(() => {
+    let cancelled = false;
     const image = new Image();
-    image.src = src;
+
     image.onload = () => {
-      const aspectRatio = image.width / image.height;
-      let width = containerWidth;
-      let height = containerWidth / aspectRatio;
-
-      if (width < containerWidth || height < containerHeight) {
-        const containerRatio = containerWidth / containerHeight;
-        if (aspectRatio > containerRatio) {
-          height = containerHeight;
-          width = containerHeight * aspectRatio;
-        } else {
-          width = containerWidth;
-          height = containerWidth / aspectRatio;
-        }
-      }
-
-      width *= zoom;
-      height *= zoom;
-
-      setImageSize({ width, height });
-      setPosition({
-        x: (containerWidth - width) / 2,
-        y: (containerHeight - height) / 2
-      });
+      if (cancelled) return;
+      setNatural({ width: image.naturalWidth, height: image.naturalHeight });
+      setOffset(null);
     };
 
     image.onerror = (err) => {
+      if (cancelled) return;
       console.error("ImageCropView: Failed to load image", src, err);
     };
-  }, [src, containerWidth, containerHeight, zoom]);
 
-  const constrain = (x, y) => {
-    const minX = containerWidth - imageSize.width;
-    const maxX = 0;
-    const minY = containerHeight - imageSize.height;
-    const maxY = 0;
+    image.src = src;
 
-    return {
-      x: Math.min(maxX, Math.max(minX, x)),
-      y: Math.min(maxY, Math.max(minY, y))
+    return () => {
+      cancelled = true;
     };
-  };
+  }, [src]);
 
-  const handleMouseDown = (e) => {
-    if (!isEditing) {
-      e.preventDefault();
-      return;
-    }
-    e.preventDefault();
-    setIsDragging(true);
-    setStartPos({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y
-    });
-  };
+  const size = useMemo(
+    () => coverSize(natural, containerWidth, containerHeight, zoom),
+    [natural, containerWidth, containerHeight, zoom]
+  );
 
-  const handleMouseMove = (e) => {
-    if (!isEditing || !isDragging) {
-      return;
-    }
+  const view = clampOffset(
+    offset ?? centerOffset(size, containerWidth, containerHeight),
+    size,
+    containerWidth,
+    containerHeight
+  );
 
-    const newX = e.clientX - startPos.x;
-    const newY = e.clientY - startPos.y;
-    setPosition(constrain(newX, newY));
-  };
+  const moveTo = (x, y) => setOffset(clampOffset({ x, y }, size, containerWidth, containerHeight));
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleTouchStart = (e) => {
+  const handlePointerDown = (e) => {
     if (!isEditing) return;
-    setIsDragging(true);
-    setStartPos({
-      x: e.touches[0].clientX - position.x,
-      y: e.touches[0].clientY - position.y
-    });
+
+    e.preventDefault();
+    containerRef.current?.focus();
+    // jsdom, where consumers run their tests, has no pointer capture.
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    setGrab({ pointerId: e.pointerId, originX: e.clientX - view.x, originY: e.clientY - view.y });
   };
 
-  const handleTouchMove = (e) => {
-    if (!isEditing || !isDragging) return;
-    if (e.cancelable) e.preventDefault();
+  const handlePointerMove = (e) => {
+    if (!grab || e.pointerId !== grab.pointerId) return;
 
-    const newX = e.touches[0].clientX - startPos.x;
-    const newY = e.touches[0].clientY - startPos.y;
-    setPosition(constrain(newX, newY));
+    moveTo(e.clientX - grab.originX, e.clientY - grab.originY);
   };
 
-  const handleTouchEnd = () => {
-    setIsDragging(false);
+  const handlePointerEnd = (e) => {
+    if (grab && e.pointerId !== grab.pointerId) return;
+
+    setGrab(null);
   };
 
   const handleKeyDown = (e) => {
-    if (!isEditing) return;
-
-    const step = 20;
-    let { x: newX, y: newY } = position;
-
-    switch (e.key) {
-      case 'ArrowUp':
-        newY -= step;
-        break;
-      case 'ArrowDown':
-        newY += step;
-        break;
-      case 'ArrowLeft':
-        newX -= step;
-        break;
-      case 'ArrowRight':
-        newX += step;
-        break;
-      default:
-        return;
-    }
+    const delta = isEditing ? KEY_DELTAS.get(e.key) : undefined;
+    if (!delta) return;
 
     e.preventDefault();
-    setPosition(constrain(newX, newY));
+    moveTo(view.x + delta.x, view.y + delta.y);
   };
 
   return (
     <div
       ref={containerRef}
-      role="application"
-      aria-label="Image Cropper"
-      aria-description="Use Arrow keys to adjust image position."
-      tabIndex={isEditing ? 0 : -1}
+      role={isEditing ? "application" : undefined}
+      aria-label={isEditing ? "Image cropper" : undefined}
+      aria-keyshortcuts={isEditing ? "ArrowUp ArrowDown ArrowLeft ArrowRight" : undefined}
+      tabIndex={isEditing ? 0 : undefined}
       onKeyDown={handleKeyDown}
       style={{
         width: containerWidth,
@@ -151,34 +105,29 @@ const ImageCropView = ({
         overflow: "hidden",
         position: "relative",
         backgroundColor: "#f0f0f0",
-        cursor: isEditing ? (isDragging ? "grabbing" : "grab") : "default",
-        outline: "none",
+        cursor: isEditing ? (grab ? "grabbing" : "grab") : "default"
       }}
-      onMouseLeave={handleMouseUp}
     >
       <img
-        ref={imageRef}
         src={src}
         alt={alt}
         style={{
-          width: imageSize.width,
-          height: imageSize.height,
+          width: size.width,
+          height: size.height,
           position: "absolute",
           left: 0,
           top: 0,
-          transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
-          transition: isDragging ? "none" : "transform 0.1s ease",
+          transform: `translate3d(${view.x}px, ${view.y}px, 0)`,
+          transition: grab ? "none" : "transform 0.1s ease",
           userSelect: "none",
           objectFit: "fill",
           pointerEvents: isEditing ? "auto" : "none",
           touchAction: "none"
         }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
         draggable={false}
       />
     </div>

@@ -30,19 +30,14 @@ function App() {
   const [isEditing, setIsEditing] = useState(false);
   const [zoom, setZoom] = useState(1);
 
-  const handleSave = (cropData) => {
-    setIsEditing(false);
-  };
-
   return (
     <ImageCropView
       src="/path/to/concert-poster.jpg"
-      alt="Concert Poster 2024" 
+      alt="Concert Poster 2024"
       containerWidth={800}
       containerHeight={400}
       isEditing={isEditing}
       zoom={zoom}
-      onSave={handleSave}
     />
   );
 }
@@ -50,11 +45,9 @@ function App() {
 
 ## Accessibility
 
-This component is built with accessibility in mind:
-
-- **Keyboard Support**: When in editing mode, the container is focusable. Use **Arrow keys** (Up/Down/Left/Right) to adjust the image position.
-- **Screen Readers**: Helper texts and ARIA attributes provide context to screen reader users.
-- **Touch Support**: Full touch support for dragging on mobile devices.
+- **Keyboard support.** While `isEditing` is true the container is focusable, and the Up, Down, Left, and Right arrow keys move the image 20px per press. Clicking the image focuses the container, so the arrow keys work straight after a drag.
+- **Screen readers.** While `isEditing` is true the container has `role="application"`, an `aria-label`, and `aria-keyshortcuts` listing the four arrow keys. While it is false the container drops those attributes and leaves its tab order, so the image alone carries the semantics.
+- **Pointer support.** Mouse, touch, and pen all go through the same pointer handlers, so the component behaves the same on every input device.
 
 ## Props
 
@@ -66,7 +59,8 @@ This component is built with accessibility in mind:
 | `containerHeight` | number   | No       | 400                 | Height of the container         |
 | `isEditing`       | boolean  | No       | false               | Enable/disable drag mode        |
 | `zoom`            | number   | No       | 1                   | Zoom level (multiplier)         |
-| `onSave`          | function | No       | -                   | Callback with crop data         |
+
+The image is scaled to cover the container, then multiplied by `zoom`. At `zoom` values below 1 the image no longer fills the container, so it stays centred and cannot be dragged. Changing `zoom` keeps the current drag position instead of recentring the image.
 
 ## Example Use Cases
 
@@ -84,6 +78,9 @@ npm install
 
 # Build package
 npm run build
+
+# Run the layout tests and type check the published declarations
+npm test
 ```
 
 ## License

@@ -1,16 +1,27 @@
 {
   "name": "react-image-crop-drag",
-  "version": "1.2.0",
-  "description": "React component for draggable image crop view with vertical adjustment",
+  "version": "1.3.0",
+  "description": "React component for a draggable, zoomable image crop view",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/netshcodes/react-image-crop-drag.git"
+  },
+  "homepage": "https://github.com/netshcodes/react-image-crop-drag#readme",
+  "bugs": {
+    "url": "https://github.com/netshcodes/react-image-crop-drag/issues"
+  },
   "scripts": {
     "build": "rollup -c",
-    "prepare": "npm run build"
+    "typecheck": "tsc --noEmit --strict --target es2020 --moduleResolution node --esModuleInterop src/types.check.ts",
+    "test": "node --test src/ && npm run typecheck",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test"
   },
   "peerDependencies": {
     "react": ">=16.8.0",
