@@ -44,6 +44,9 @@
     "drag",
     "poster"
   ],
-  "author": "netshdev",
+  "author": "netshcodes",
+  "contributors": [
+    "netshcodes"
+  ],
   "license": "MIT"
 }
