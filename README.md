@@ -43,6 +43,26 @@ function App() {
 }
 ```
 
+## Example app
+
+[netshcodes/react-image-crop-drag-example](https://github.com/netshcodes/react-image-crop-drag-example) is a one-page React + TypeScript + Vite app that installs this package from npm the way any consumer does. Set every prop from a control panel, drag the frame, then copy the JSX for the state you ended up with.
+
+```bash
+git clone https://github.com/netshcodes/react-image-crop-drag-example.git
+cd react-image-crop-drag-example
+npm install
+npm run dev
+```
+
+The page covers:
+
+- Three sample images with different aspect ratios, plus any image you load from your own disk (read through `URL.createObjectURL`, so nothing is uploaded).
+- Panorama, square, and portrait frames, which set `containerWidth` and `containerHeight`.
+- A `isEditing` toggle, so you can see the frame keep its crop while leaving the tab order and ignoring pointer and key input.
+- A `zoom` slider, including values below the fit where the image stops covering the frame and so centres and stops moving.
+
+A readout under the frame reports the source size, the size the component scaled it to, and which axes are still draggable — an axis moves only while the scaled image is larger than the frame on that axis, which is why a tall source drags vertically but not horizontally.
+
 ## Accessibility
 
 - **Keyboard support.** While `isEditing` is true the container is focusable, and the Up, Down, Left, and Right arrow keys move the image 20px per press. Clicking the image focuses the container, so the arrow keys work straight after a drag.
