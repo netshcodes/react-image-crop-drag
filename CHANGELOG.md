@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.1] - 2026-11-24
+
+Documentation only. The published bundle is byte for byte the 1.3.0 bundle.
+
+### Changed
+
+- **The README is written for someone deciding whether to install the package.** It leads with what the component does and what it does not do, states the React peer range and the pointer events requirement, and links the npm, CI, and license badges.
+- **The quick start runs as written.** The old snippet created `isEditing` and `zoom` state and never changed either one, so a reader who copied it got a frame that could not enter edit mode. The new one renders the button and the slider that drive both props.
+- **The props table gives the real types and defaults**, and says that the component accepts no `className`, `style`, or `id` and forwards nothing to the DOM.
+
+### Added
+
+- **A "How the crop behaves" section.** It covers the cover scale, the per-axis drag rule, what a `zoom` below the fit looks like, the 20px keyboard step, the 100ms ease after a key press, and the console-only load error.
+- **A "Limitations" section.** No callback exposes the crop position, the component produces no cropped image file, `zoom` has no pinch or wheel gesture, and the frame takes pixel sizes only.
+- **An "Exports and types" section**, which names the default export and the `ImageCropViewProps` type.
+- **Development notes** that list `npm run build` and `npm test`, name the Node version CI uses, and link the issue tracker and this file.
+
+### Removed
+
+- The feature list of bold labels and the "Example Use Cases" list. The props table and the behavior section carry those facts.
+
 ## [1.3.0] - 2026-11-23
 
 ### Fixed

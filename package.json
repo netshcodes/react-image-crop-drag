@@ -1,6 +1,6 @@
 {
   "name": "react-image-crop-drag",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "React component for a draggable, zoomable image crop view",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
