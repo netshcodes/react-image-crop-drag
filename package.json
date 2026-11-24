@@ -19,7 +19,7 @@
   "scripts": {
     "build": "rollup -c",
     "typecheck": "tsc --noEmit --strict --target es2020 --moduleResolution node --esModuleInterop src/types.check.ts",
-    "test": "node --test src/ && npm run typecheck",
+    "test": "node --test && npm run typecheck",
     "prepare": "npm run build",
     "prepublishOnly": "npm test"
   },
